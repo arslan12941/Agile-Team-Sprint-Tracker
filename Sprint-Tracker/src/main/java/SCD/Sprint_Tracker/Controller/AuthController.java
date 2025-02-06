@@ -1,48 +1,60 @@
 package SCD.Sprint_Tracker.Controller;
 
-import SCD.Sprint_Tracker.DTO.RegistrationDTO;
+import SCD.Sprint_Tracker.Entity.User;
+import SCD.Sprint_Tracker.Entity.Enums.UserRole;
 import SCD.Sprint_Tracker.Service.UserService;
-import jakarta.validation.Valid;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
+import SCD.Sprint_Tracker.Config.JwtTokenUtil;
+import SCD.Sprint_Tracker.DTO.AuthResponseDto;       // DTO import
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 public class AuthController {
 
     private final UserService userService;
+    private final JwtTokenUtil jwtTokenUtil;
 
-    public AuthController(UserService userService) {
-        this.userService = userService;
+    public AuthController(UserService userService,
+                          JwtTokenUtil jwtTokenUtil) {
+        this.userService   = userService;
+        this.jwtTokenUtil  = jwtTokenUtil;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody RegistrationDTO registrationDTO,
-                                          BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            return ResponseEntity.badRequest().body(getValidationErrors(bindingResult));
-        }
+    @GetMapping("/login/success")
+    public AuthResponseDto loginSuccess(OAuth2AuthenticationToken authToken) {
+        // 1) Extract GitHub attributes
+        String githubId = Objects.requireNonNull(authToken.getPrincipal()
+                .getAttribute("id")).toString();
+        String username = authToken.getPrincipal()
+                .getAttribute("login");
 
-        if (!registrationDTO.getPassword().equals(registrationDTO.getConfirmPassword())) {
-            return ResponseEntity.badRequest().body("Passwords do not match");
+        // 2) Build or update our own User entity
+        User user = new User();
+        user.setGithubId(githubId);
+        user.setUsername(username);
+        // ADMIN only if matches your configured admin ID
+        if (userService.isAdmin(githubId)) {
+            user.setRole(UserRole.ADMIN);
+        } else {
+            user.setRole(UserRole.EMPLOYEE);
         }
+        user = userService.saveOrUpdateUser(user);
 
-        if (userService.existsByUsernameOrEmail(registrationDTO.getUsername(), registrationDTO.getEmail())) {
-            return ResponseEntity.badRequest().body("Username or Email already exists");
-        }
+        // 3) Generate JWT
+        String token = jwtTokenUtil.generateToken(user);
 
-        userService.registerUser(registrationDTO);
-        return ResponseEntity.ok("User registered successfully");
+        // 4) Return our DTO
+        return new AuthResponseDto(
+                token,
+                user.getUsername(),
+                user.getRole().name()
+        );
     }
-
-    private List<String> getValidationErrors(BindingResult bindingResult) {
-        return bindingResult.getAllErrors().stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
+    @GetMapping("/test")
+    public String test() {
+        return "✅ Backend is up & running!";
     }
 }

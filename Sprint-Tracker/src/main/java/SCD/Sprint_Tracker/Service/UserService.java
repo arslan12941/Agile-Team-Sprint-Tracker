@@ -1,33 +1,40 @@
 package SCD.Sprint_Tracker.Service;
 
-import SCD.Sprint_Tracker.DTO.RegistrationDTO;
-import SCD.Sprint_Tracker.Model.User;
+import SCD.Sprint_Tracker.Entity.User;
 import SCD.Sprint_Tracker.Repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    @Value("${admin.github.id}")
+    private String adminGithubId;
+
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
-    public boolean existsByUsernameOrEmail(String username, String email) {
-        return userRepository.existsByUsernameOrEmail(username, email);
+    public User saveOrUpdateUser(User user) {
+        Optional<User> existing = userRepository.findByGithubId(user.getGithubId());
+        if (existing.isPresent()) {
+            User existingUser = existing.get();
+            existingUser.setUsername(user.getUsername());
+            return userRepository.save(existingUser);
+        }
+        return userRepository.save(user);
     }
 
-    public void registerUser(RegistrationDTO registrationDTO) {
-        User user = new User();
-        user.setUsername(registrationDTO.getUsername());
-        user.setEmail(registrationDTO.getEmail());
-        user.setPhoneNumber(registrationDTO.getPhoneNumber());
-        user.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
+    public User getByGithubId(String githubId) {
+        return userRepository.findByGithubId(githubId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 
-        userRepository.save(user);
+    public boolean isAdmin(String githubId) {
+        return githubId.equals(adminGithubId);
     }
 }
