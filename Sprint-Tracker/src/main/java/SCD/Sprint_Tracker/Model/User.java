@@ -23,7 +23,7 @@ public class User {
     @Column(nullable = false)
     private String phoneNumber;
 
-    @JsonIgnore // Prevent password from being exposed in API responses
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 }

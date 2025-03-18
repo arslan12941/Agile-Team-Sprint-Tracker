@@ -18,7 +18,7 @@ public class RegistrationDTO {
     @Email(message = "Invalid email format")
     private String email;
 
-    @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Invalid phone number")
+    @Pattern(regexp = "^\\+\\d{2}-\\d{3}-\\d{7}$", message = "Invalid phone number format. Use +92-XXX-XXXXXXX")
     private String phoneNumber;
 
     @NotBlank(message = "Password is required")
