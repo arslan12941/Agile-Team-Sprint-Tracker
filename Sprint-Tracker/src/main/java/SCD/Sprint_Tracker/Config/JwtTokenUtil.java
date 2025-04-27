@@ -7,7 +7,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-import java.util.stream.DoubleStream;
 
 @Component
 public class JwtTokenUtil {
@@ -17,8 +16,7 @@ public class JwtTokenUtil {
     public String generateToken(User user) {
         // 24h
         long expiration = 86400000;
-        DoubleStream Jwts = DoubleStream.empty();
-        return DoubleStream.builder()
+        return Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("role", user.getRole().name())
                 .claim("githubId", user.getGithubId())
