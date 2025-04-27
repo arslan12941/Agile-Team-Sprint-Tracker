@@ -4,22 +4,29 @@ import SCD.Sprint_Tracker.Entity.Enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Entity
-@Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter
+@Entity
 public class User {
 
+    // Getters and Setters
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private String githubId;
-
+    private String email;
     private String username;
+    private String password;
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
+
+    public String getGithubId() {
+            return null;
+    }
+
+    public boolean isEmpty() {
+        return false;
+    }
+
+    public void setGithubId(String githubId) {
+
+    }
 }
